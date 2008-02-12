@@ -1,0 +1,22 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+           xmlns:browser="http://namespaces.zope.org/browser"
+           xmlns:i18n="http://namespaces.zope.org/i18n"
+           i18n:domain="getpaid.ups">
+           
+  <browser:page
+     for="*"
+     name="manage-getpaid-ups"
+     class=".admin.SettingsForm"
+     permission="cmf.ManagePortal"
+     menu="getpaid_settings"
+     title="UPS"     
+     />  
+    
+    <browser:page
+     for="*"
+     name="checkout-select-shipping"
+     class=".checkout.CheckoutSelectShipping"
+     permission="zope2.View"
+     />
+
+</configure>
