@@ -11,22 +11,21 @@
          tal:content="structure view/hidden_inputs"> </div>
 
     <div class="portalMessage" tal:content="view/status" tal:condition="view/status"> </div>
-
-    <span> Select shipping method: </span>
+<fieldset tal:define="shippingMethods view/getShippingMethods">
+<legend i18n:translate=""> Select UPS shipping rate: </legend>
     <br/>
-        <select name="shipping_methods">
-	
-            <tal:loop tal:repeat="sM view/getShippingMethods">
-                   shipment1.service_code = "ALT"
-    shipment1.service = "ANOTHERSERVICE"
-    shipment1.currency = "$"
-    shipment1.cost = 20
-    shipment1.days_to_delivery = 30
-    shipment1.delivery_time = "A lot more of days"
- 
-                <option  tal:define="toDisplay python:sM.service_code + ' ' + sM.service + ' ' + str(sM.currency) + str(sM.cost)" tal:content="toDisplay" />
+            <tal:loop tal:repeat="sM shippingMethods">
+                <label tal:define="toDisplay python:sM.service_code + ' ' + sM.service + ' ' + str(sM.currency) + str(sM.cost)" tal:attributes="for sM/service_code" tal:content="toDisplay" >Here the label for the shipping method </label>
+                <input tal:condition="python:sM.service_code != shippingMethods[0].service_code" type="radio"  name="shipping_rate"  tal:attributes="value sM/service_code; onclick python:'document.getElementById(\'shipping_price\').value='+str(sM.cost)" />  
+                <input tal:condition="python:sM.service_code == shippingMethods[0].service_code" type="radio"  name="shipping_rate"  tal:attributes="value sM/service_code; onclick python:'document.getElementById(\'shipping_price\').value='+str(sM.cost)" checked />
+                <br />
             </tal:loop>
-        </select>
+            <input tal:attributes="value python:shippingMethods[0].cost" type="hidden" id="shipping_price" value="cost" name="shipping_price"/>
+
+</fieldset>
+
+ 
+
    <br/><br/>
       <div id="actionsView">
         <span class="actionButtons"

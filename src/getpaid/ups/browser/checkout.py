@@ -15,11 +15,13 @@ from zope.formlib import form
 
 import Acquisition
 from Products.PloneGetPaid.browser.widgets import CountrySelectionWidget, StateSelectionWidget, CCExpirationDateWidget
-from getpaid.ups.rates import UPSRateService
+from getpaid.ups.rates import UPSRateService, UPSResponse
 from cPickle import loads, dumps
 from zope.event import notify
 
-from getpaid.ups.interfaces import IUPSRateService
+from getpaid.ups.interfaces import IUPSRateService,IShippingMethodRate
+
+import pprint
 
 class ShippingForm( BaseCheckoutForm ):
 
@@ -30,34 +32,35 @@ class ShippingForm( BaseCheckoutForm ):
 class CheckoutController( ListViewController ):
 
     steps = ['checkout-address-info', 'checkout-select-shipping','checkout-review-pay']
-    #steps = ['checkout-address-info','checkout-review-pay']
-    
+
     def getStep( self, step_name ):
         step = component.getMultiAdapter(
                     ( self.wizard.context, self.wizard.request ),
                     name=step_name
                     )
         return step.__of__( Acquisition.aq_inner( self.wizard.context ) )
+    
+class ShippingRate( options.PropertyBag ):
+    title = "Shipping Rate"
+    
+ShippingRate.initclass( IShippingMethodRate )
 
 class CheckoutSelectShipping( BaseCheckoutForm ):
     """
     browser view for collecting credit card information and submitting it to
     a processor.
     """
+
+    form_fields = form.Fields(IShippingMethodRate)
     
-    form_fields = form.Fields( interfaces.IBillingAddress,
-                               interfaces.IShippingAddress,
-                               interfaces.IUserContactInformation )
-    
-    form_fields['ship_country'].custom_widget = CountrySelectionWidget
-    form_fields['bill_country'].custom_widget = CountrySelectionWidget
-    form_fields['ship_state'].custom_widget = StateSelectionWidget
-    form_fields['bill_state'].custom_widget = StateSelectionWidget
-    
-    
+    #form_fields = form.Fields(IShippingMethodRate)
+    #form_fields['shipping_rate'].custom_widget = StateSelectionWidget
+    #form_fields['shipping_price'].custom_widget = StateSelectionWidget
+
     template = ZopeTwoPageTemplateFile("templates/checkout-shiping-method.pt")
-    
-    
+    shipping_methods = {}
+
+
     def getShippingMethods( self ):
         """'checkout-select-shipping'
         Queries the getpaid.ups utility to get the available shipping methods and returns a list
@@ -65,43 +68,31 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
         """
         ups_service = UPSRateService()
         available_shipping_methods = ups_service.getRates(self.createOrder())
+        for method in available_shipping_methods:
+            self.shipping_methods[method.service_code] = method
         return available_shipping_methods
 
-    def setShippingMethods( self ):
+    def setShippingMethods( self,data ):
         """
         Set the shipping methods chossed by the user
         """
         # "what we do with the shipping method selected?"
+        # print self.shipping_rate[data]
         pass
-    
+        
+
     def setUpWidgets( self, ignore_request=False ):
         self.adapters = self.adapters is not None and self.adapters or {}
-        
+
         # grab all the adapters and fields from the entire wizard form sequence (till the current step)
-        self.wizard.data_manager['cur_step'] = 'checkout-select-shipping'
-        adapters = self.wizard.data_manager.adapters
-        adapters.update( self.getSchemaAdapters() )
-        fields   = self.wizard.data_manager.fields
-        # edit widgets for payment info
+        adapters = self.getSchemaAdapters()
         self.widgets = form.setUpEditWidgets(
-            self.form_fields.select( *schema.getFieldNames( interfaces.IBillingAddress)),
+            self.form_fields.select( *schema.getFieldNames(IShippingMethodRate)),
             self.prefix, self.context, self.request,
             adapters=adapters, ignore_request=ignore_request
             )
         
-        # display widgets for bill/ship address
-        bill_ship_fields = fields.select( *schema.getFieldNamesInOrder( interfaces.IBillingAddress ) ) + \
-                           fields.select( *schema.getFieldNamesInOrder( interfaces.IShippingAddress ) )
-                           
-        # clear custom widgets.. (typically for edit, we want display)
-        for field in bill_ship_fields:
-            if field.custom_widget is not None:
-                field.custom_widget = None
-        
-        self.widgets += form.setUpEditWidgets(
-            bill_ship_fields,  self.prefix, self.context, self.request,
-            adapters=adapters, for_display=True, ignore_request=ignore_request
-            )
+
     def createOrder( self ):
         order_manager = component.getUtility( interfaces.IOrderManager )
         order = Order()
@@ -130,23 +121,20 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
     
     def getSchemaAdapters( self ):
         adapters = {}
-        adapters[ interfaces.IUserPaymentInformation ] = BillingInfo(self.context)
+        adapters[ IShippingMethodRate ] = ShippingRate()
         return adapters
 
     @form.action(_(u"Cancel"), name="cancel", validator=null_condition)
     def handle_cancel( self, action, data):
-        print "checkoutSelectShiping Cancel >"
         return self.request.response.redirect( self.context.portal_url.getPortalObject().absolute_url() )
 
     @form.action(_(u"Back"), name="back")
-    def handle_back( self, action, data):
-        print "checkoutSelectShiping Back >"
+    def handle_back( self, action, data, validator=null_condition):
         self.next_step_name = wizard_interfaces.WIZARD_PREVIOUS_STEP
 
-    @form.action(_(u"Continue"), name="continue_s")
-    def handle_continue_s( self, action, data ):
-        print "checkoutSelectShiping Continue >"
-        self.setShippingMethods()
+    @form.action(_(u"Continue"), name="continue")
+    def handle_continue( self, action, data ):
+        #self.setShippingMethods(data,self.request['shipping_rate'])
         self.next_step_name = wizard_interfaces.WIZARD_NEXT_STEP
 
     
