@@ -65,7 +65,7 @@ class UPSRateService( Contained ):
                                  pretty=True)
         #Returns always a UPS response with two shipment rates (It takes too long to 
         #register a UPS account
-        return FakeResponse(request).shipments
+        #return FakeResponse(request).shipments
         #raise str(request)
         try:
             response_text = SendRequest( settings.server_url, request ).read()
