@@ -2,17 +2,23 @@
            xmlns:browser="http://namespaces.zope.org/browser"
            xmlns:i18n="http://namespaces.zope.org/i18n"
 	   xmlns:five="http://namespaces.zope.org/five">
-
+   
    <i18n:registerTranslations directory="locales" />
-
+   
    <adapter factory=".rates.OriginRouter" />
-
-
-   <utility
-      provides=".interfaces.IUPSRateService"
-      factory=".rates.UPSRateService"
+   
+   <!-- Plugin Manager -->
+   <adapter
+      for="getpaid.core.interfaces.IStore"
+      provides="getpaid.core.interfaces.IPluginManager"
+      factory=".plugin.UPSPlugin"
       />
-
-
+      
+   <!-- Install at PloneGetPaid Installation (till we have a plugin mannage ui)-->
+   <subscriber
+      for="getpaid.core.interfaces.IStore
+           getpaid.core.interfaces.IStoreInstalledEvent"
+      handler=".plugin.storeInstalled"
+      />
 
 </configure>

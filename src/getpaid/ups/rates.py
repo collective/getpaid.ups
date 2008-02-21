@@ -7,7 +7,7 @@ import elementtree.ElementTree as etree
 
 from zope import interface, schema, component
 from zope.app.container.contained import Contained
-
+from persistent import Persistent
 from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder
 from getpaid.core.payment import ShippingAddress, ContactInformation
 import interfaces
@@ -39,7 +39,7 @@ class OriginRouter( object ):
         
         return contact, address
 
-class UPSRateService( Contained ):
+class UPSRateService( Persistent, Contained ):
     
     interface.implements( interfaces.IUPSRateService, 
                           interfaces.IUPSSettings )
