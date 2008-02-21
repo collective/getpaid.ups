@@ -1,34 +1,23 @@
-from Products.PloneGetPaid.browser.checkout import BaseCheckoutForm, null_condition, BillingInfo, ShipAddressInfo, BillAddressInfo, ContactInfo
+"""
+$Id: $
+"""
 
+import Acquisition
 from AccessControl import getSecurityManager
+from cPickle import loads, dumps
 
-from getpaid.wizard import Wizard, ListViewController, interfaces as wizard_interfaces
-from getpaid.core import interfaces, options, payment
-from getpaid.core.order import Order
-from getpaid.wizard import ListViewController
-
-from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
-from zope import component, schema, interface
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope import component, schema
 from zope.app.i18n import ZopeMessageFactory as _
 from zope.formlib import form
 
-import Acquisition
-from Products.PloneGetPaid.browser.widgets import CountrySelectionWidget, StateSelectionWidget, CCExpirationDateWidget
-from getpaid.ups.rates import UPSRateService, UPSResponse
-from cPickle import loads, dumps
-from zope.event import notify
+from getpaid.core import interfaces, options, payment
+from getpaid.core.order import Order
+from getpaid.ups.interfaces import IUPSRateService, IShippingMethodRate
+from getpaid.wizard import ListViewController, interfaces as wizard_interfaces
 
-from getpaid.ups.interfaces import IUPSRateService,IShippingMethodRate
+from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
+from Products.PloneGetPaid.browser import checkout
 
-import pprint
-
-class ShippingForm( BaseCheckoutForm ):
-
-    def update( self ):
-        self.setupHiddenFormVariables()
-
-        
 class CheckoutController( ListViewController ):
 
     steps = ['checkout-address-info', 'checkout-select-shipping','checkout-review-pay']
@@ -45,13 +34,13 @@ class ShippingRate( options.PropertyBag ):
     
 ShippingRate.initclass( IShippingMethodRate )
 
-class CheckoutSelectShipping( BaseCheckoutForm ):
+class CheckoutSelectShipping( checkout.BaseCheckoutForm ):
     """
     browser view for collecting credit card information and submitting it to
     a processor.
     """
 
-    form_fields = form.Fields(IShippingMethodRate)
+    form_fields = form.Fields( IShippingMethodRate )
     
     #form_fields = form.Fields(IShippingMethodRate)
     #form_fields['shipping_rate'].custom_widget = StateSelectionWidget
@@ -66,8 +55,8 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
         Queries the getpaid.ups utility to get the available shipping methods and returns a list
         of them for the template to display and the user to choose among.
         """
-        ups_service = UPSRateService()
-        available_shipping_methods = ups_service.getRates(self.createOrder())
+        ups_service = component.getUtility( IUPSRateService )
+        available_shipping_methods = ups_service.getRates( self.createTransientOrder() )
         for method in available_shipping_methods:
             self.shipping_methods[method.service_code] = method
         return available_shipping_methods
@@ -93,7 +82,7 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
             )
         
 
-    def createOrder( self ):
+    def createTransientOrder( self ):
         order_manager = component.getUtility( interfaces.IOrderManager )
         order = Order()
         
@@ -110,7 +99,6 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
 
         order.order_id = self.wizard.data_manager.get('order_id')
         order.user_id = getSecurityManager().getUser().getId()
-        notify( ObjectCreatedEvent( order ) )
 
         return order
     
@@ -124,12 +112,12 @@ class CheckoutSelectShipping( BaseCheckoutForm ):
         adapters[ IShippingMethodRate ] = ShippingRate()
         return adapters
 
-    @form.action(_(u"Cancel"), name="cancel", validator=null_condition)
+    @form.action(_(u"Cancel"), name="cancel", validator=checkout.null_condition)
     def handle_cancel( self, action, data):
         return self.request.response.redirect( self.context.portal_url.getPortalObject().absolute_url() )
 
     @form.action(_(u"Back"), name="back")
-    def handle_back( self, action, data, validator=null_condition):
+    def handle_back( self, action, data, validator=checkout.null_condition):
         self.next_step_name = wizard_interfaces.WIZARD_PREVIOUS_STEP
 
     @form.action(_(u"Continue"), name="continue")
