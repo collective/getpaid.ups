@@ -3,6 +3,7 @@ $Id:
 """
 
 from urllib2 import Request, urlopen, URLError
+
 import elementtree.ElementTree as etree
 
 from zope import interface, schema, component
@@ -120,7 +121,16 @@ def CreateAccessRequest( license_number, user_id, psswrd):
     
     return accessrequest
 
-
+def sanitize_state( state ):
+    if '-' in state:
+        return state.split('-')[-1]
+    return state
+    
+def sanitize_field( address, name):
+    value = getattr( address, "ship_%s"%name, None)
+    return value or getattr( address, "bill_%s"%name, '')
+    
+    
 def CreateServiceRequest(settings,
                          store_contact,
                          origin_contact,
@@ -189,7 +199,8 @@ def CreateServiceRequest(settings,
     etree.SubElement(shipper_address, "AddressLine2").text = store_contact.contact_address2
     etree.SubElement(shipper_address, "AddressLine3")
     etree.SubElement(shipper_address, "City").text = store_contact.contact_city
-    etree.SubElement(shipper_address, "StateProvinceCode").text = store_contact.contact_state
+
+    etree.SubElement(shipper_address, "StateProvinceCode").text = sanitize_state( store_contact.contact_state )
     etree.SubElement(shipper_address, "PostalCode").text = store_contact.contact_postalcode
     etree.SubElement(shipper_address, "CountryCode").text = store_contact.contact_country
     
@@ -197,6 +208,9 @@ def CreateServiceRequest(settings,
     shipment_shipto = etree.SubElement(shipment, "ShipTo")
 
     addr = order.shipping_address
+    if addr.ship_same_billing:
+        addr = order.billing_address
+        
     contact = order.contact_information
     
     etree.SubElement(shipment_shipto, "CompanyName").text = contact.name
@@ -207,15 +221,15 @@ def CreateServiceRequest(settings,
         etree.SubElement(shipment_shipto, "PhoneNumber").text = contact.phone_number
     
     shipto_address = etree.SubElement(shipment_shipto, "Address")
-    etree.SubElement(shipto_address, "AddressLine1").text = addr.ship_first_line
+    etree.SubElement(shipto_address, "AddressLine1").text = sanitize_field( addr, 'first_line')
     
     if getattr( addr, 'ship_second_line', None):
-        etree.SubElement(shipto_address, "AddressLine2").text = addr.ship_second_line
+        etree.SubElement(shipto_address, "AddressLine2").text = sanitize_field( addr, 'second_line')
         
-    etree.SubElement(shipto_address, "City").text = addr.ship_city
-    etree.SubElement(shipto_address, "State").text = addr.ship_state
-    etree.SubElement(shipto_address, "CountryCode").text = addr.ship_country
-    etree.SubElement(shipto_address, "PostalCode").text = addr.ship_postal_code
+    etree.SubElement(shipto_address, "City").text = sanitize_field( addr, 'city')
+    etree.SubElement(shipto_address, "State").text = sanitize_field( addr, "state" )
+    etree.SubElement(shipto_address, "CountryCode").text = sanitize_field( addr, 'country' )
+    etree.SubElement(shipto_address, "PostalCode").text = sanitize_field( addr, 'postal_code')
     
     #shipment - shipfrom (same as shipper)
     if origin_contact:
@@ -231,7 +245,7 @@ def CreateServiceRequest(settings,
         etree.SubElement(shipfrom_address, "AddressLine2").text = origin_address.ship_second_line
         etree.SubElement(shipfrom_address, "AddressLine3")
         etree.SubElement(shipfrom_address, "City").text = origin_address.ship_city
-        etree.SubElement(shipfrom_address, "StateProvinceCode").text = origin_address.ship_state
+        etree.SubElement(shipfrom_address, "StateProvinceCode").text = sanitize_state( origin_address.ship_state )
         etree.SubElement(shipfrom_address, "PostalCode").text = origin_address.ship_postal_code
         etree.SubElement(shipfrom_address, "CountryCode").text = origin_address.ship_country
     

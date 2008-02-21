@@ -20,7 +20,25 @@ from Products.PloneGetPaid.browser import checkout
 
 class CheckoutController( ListViewController ):
 
-    steps = ['checkout-address-info', 'checkout-select-shipping','checkout-review-pay']
+    conditions = {'checkout-select-shipping' : 'checkShippableCart'}
+    steps = [ 'checkout-address-info',
+              'checkout-select-shipping',
+              'checkout-review-pay']
+
+    def checkShippableCart( self ):
+        cart_utility = component.getUtility( interfaces.IShoppingCartUtility )
+        cart = cart_utility.get( self.wizard.context )
+        return bool( filter(  interfaces.IShippableLineItem.providedBy, cart.values() ) )
+                 
+    def getNextStepName( self, step_name ):
+        step_name = super( CheckoutController, self).getNextStepName( step_name )
+        condition_method = self.conditions.get( step_name )
+        if not condition_method:
+            return step_name
+        condition = getattr( self, condition_method )
+        if condition():
+            return step_name
+        return self.getNextStepName( step_name )
 
     def getStep( self, step_name ):
         step = component.getMultiAdapter(
@@ -51,7 +69,7 @@ class CheckoutSelectShipping( checkout.BaseCheckoutForm ):
 
 
     def getShippingMethods( self ):
-        """'checkout-select-shipping'
+        """
         Queries the getpaid.ups utility to get the available shipping methods and returns a list
         of them for the template to display and the user to choose among.
         """
@@ -61,14 +79,14 @@ class CheckoutSelectShipping( checkout.BaseCheckoutForm ):
             self.shipping_methods[method.service_code] = method
         return available_shipping_methods
 
-    def setShippingMethods( self,data ):
+    def setShippingMethods( self, data ):
         """
-        Set the shipping methods chossed by the user
+        Set the shipping methods chosen by the user
         """
         # "what we do with the shipping method selected?"
+        # set it in the request, so that we can restore it in the
         # print self.shipping_rate[data]
         pass
-        
 
     def setUpWidgets( self, ignore_request=False ):
         self.adapters = self.adapters is not None and self.adapters or {}
@@ -91,7 +109,10 @@ class CheckoutSelectShipping( checkout.BaseCheckoutForm ):
         # shopping cart is attached to the session, but we want to switch the storage to the persistent
         # zodb, we pickle to get a clean copy to store.
         adapters = self.wizard.data_manager.adapters
-                
+        
+        if not filter(interfaces.IShippableLineItem.providedBy, shopping_cart.values() ): 
+            raise SyntaxError( "No Shippable Items")
+
         order.shopping_cart = loads( dumps( shopping_cart ) )
         order.shipping_address = payment.ShippingAddress.frominstance( adapters[ interfaces.IShippingAddress ] )
         order.billing_address = payment.BillingAddress.frominstance( adapters[ interfaces.IBillingAddress ] )
@@ -122,7 +143,7 @@ class CheckoutSelectShipping( checkout.BaseCheckoutForm ):
 
     @form.action(_(u"Continue"), name="continue")
     def handle_continue( self, action, data ):
-        #self.setShippingMethods(data,self.request['shipping_rate'])
+        self.setShippingMethods( data )
         self.next_step_name = wizard_interfaces.WIZARD_NEXT_STEP
 
     
