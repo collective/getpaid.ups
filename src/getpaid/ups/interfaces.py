@@ -4,8 +4,7 @@ $Id: $
 
 from zope import schema, interface
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from getpaid.core.interfaces import IShippingRateService
+from getpaid.core.interfaces import IShippingRateService, IShippingMethodSettings
 
 from zope.i18nmessageid import MessageFactory
 _ = MessageFactory('getpaid.ups')
@@ -64,19 +63,6 @@ UPS_STATUS_CODES = SimpleVocabulary([
     SimpleTerm( '0', 'failture', _(u'Failure') )
     ])
 
-
-class IUPSRateService( IShippingRateService ):
-    """
-    UPS Rates Service
-    """
-    
-    def getRates( order ):
-        """
-        given an order object, return a set of shipping method rate objects
-        for available shipping options, on error raises an exception.
-        """
-
-    
 class IOriginRouter( interface.Interface ):
     
     def getOrigin( ):
@@ -88,39 +74,26 @@ class IOriginRouter( interface.Interface ):
         TODO: support multiple origins for an order if someone can justify ;-)
         """
 
-class IShippingMethodRate( interface.Interface ):
-    """
-     Service Code: UPS Next Day Air
-     Shipment unit of measurement: LBS
-     Shipment weight: 3.0
-     Currency Code: USD
-     Total Charge: 58.97
-     Days to Delivery: 1
-     Delivery Time: 10:30 A.M.
-    """
-    
-    service_code = schema.ASCIILine( description=_(u"UPS Service Code (2 Letter)"))
-    service = schema.TextLine( description=_(u"UPS Service Name"))
-    
-    currency = schema.ASCII( description=_(u"Currency Denomination Code"))
-    cost = schema.Float( description=_(u"Cost of Delivery"))
-    
-    # really shouldn't show these, as they ignore store processing time
-    days_to_delivery = schema.Int( description=_(u"Estimated Days to Deliver") )
-    delivery_time = schema.TextLine( description=_(u"Estimated Delivery Time") ) 
-
-
 def check_settings( settings ):
 
     if settings.pickup_type and not settings.customer_classification:
         raise schema.ValidationError("Customer Classification Code is required for Pickup Type")
 
-class IUPSSettings( interface.Interface ):
+class IUPSRateService( IShippingRateService ):
+    
+    def getRates(order):
+        """get shipping rates"""
+        
+class IUPSSettings( IShippingMethodSettings ):
     """
     UPS Rates Service Options
     """
 
     interface.invariant( check_settings )
+    
+    enable_ups = schema.Bool( title=_(u"Enable UPS Shipping Rate Calculator"), 
+        description = _(u"Enable dynamic shipping rate calculation from UPS for orders in your store."),
+        default=False)
     
     server_url = schema.Choice(
         title = _(u"UPS Shipment Processor URL"),
@@ -151,13 +124,13 @@ class IUPSSettings( interface.Interface ):
         required = True,
         description = _(u"The access (not developer!) key issued to you by UPS."))
 
-    pickup_type = schema.Choice( title=_(u"Pickup Type"),
+    pickup_type = schema.Choice( title=_(u"UPS Pickup Type"),
                                  vocabulary = UPS_PICKUP_TYPES,
                                  required = False,
                                  description = _(u"Select how UPS Normally Pickups your packages"),
                                  default= UPS_PICKUP_TYPES.getTermByToken('customer-counter').value
                                  )
-    customer_classification = schema.Choice( title=_(u"Customer Classification"),
+    customer_classification = schema.Choice( title=_(u"UPS Customer Classification"),
                                              vocabulary = CUSTOMER_CLASSIFICATION,
                                              required = False,
                                              default = CUSTOMER_CLASSIFICATION.getTermByToken('retail').value

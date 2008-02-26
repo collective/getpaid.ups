@@ -7,11 +7,17 @@ from urllib2 import Request, urlopen, URLError
 import elementtree.ElementTree as etree
 
 from zope import interface, schema, component
-from zope.app.container.contained import Contained
-from persistent import Persistent
-from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder
+from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder, IShippingRateService, IShippingMethodRate
 from getpaid.core.payment import ShippingAddress, ContactInformation
 import interfaces
+from interfaces import IUPSSettings
+from getpaid.core import options
+
+UPSSettings = options.PersistentOptions.wire(
+    "UPSSettings",
+    "getpaid.ups",
+    IUPSSettings
+    )
 
 class OriginRouter( object ):
     # TODO : move this to getpaid.core
@@ -40,20 +46,18 @@ class OriginRouter( object ):
         
         return contact, address
 
-class UPSRateService( Persistent, Contained ):
+class UPSRateService( object ):
+
+    interface.implements(IShippingRateService)
+    options_interface = IUPSSettings
     
-    interface.implements( interfaces.IUPSRateService, 
-                          interfaces.IUPSSettings )
-                          
-    
-    def __init__( self ):
-        # initialize defaults from schema
-        for name, field in schema.getFields( interfaces.IUPSSettings ).items():
-            field.set( self, field.query( self, field.default ) )
-        super( UPSRateService, self).__init__()
+    def __init__(self, context):
+        self.context = context
         
     def getRates( self, order ):
-        settings = interfaces.IUPSSettings( self )
+        settings = IUPSSettings( self.context )
+        if( settings.enable_ups == False ):
+            return []
         store_contact = component.getUtility( IStoreSettings )
         origin_contact, origin_address = interfaces.IOriginRouter( order ).getOrigin()
 
@@ -78,7 +82,7 @@ class UPSRateService( Persistent, Contained ):
 
 class ShippingMethodRate( object ):
     """A Shipment Option and Price"""
-    interface.implements( interfaces.IShippingMethodRate )
+    interface.implements( IShippingMethodRate )
 
     service_code = ""
     service = ""
