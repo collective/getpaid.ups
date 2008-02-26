@@ -77,8 +77,8 @@ class UPSRateService( object ):
         except URLError:
             return []
         response = ParseResponse( etree.fromstring( response_text ) )
-        return response.shipments
-
+        # make sure to filter out options that we aren't offering in our store
+        return [service for service in response.shipments if service.service_code in settings.services]
 
 class ShippingMethodRate( object ):
     """A Shipment Option and Price"""
