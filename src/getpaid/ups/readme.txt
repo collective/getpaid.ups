@@ -18,9 +18,9 @@ To get a real response from the server, simply comment that line (#66) out.
    >>> from getpaid.ups import interfaces
    >>> from getpaid.ups.rates import UPSRateService
    >>> ups = UPSRateService()
-   >>> ups.username = 'liamstask'
-   >>> ups.password = 'o6qh37KP'
-   >>> ups.access_key = '1C1F0E18EB09318A'
+   >>> ups.username = UPS_USERNAME
+   >>> ups.password = UPS_PASSWORD
+   >>> ups.access_key = UPS_ACCESS_KEY
 
 Origin Information
 ==================
