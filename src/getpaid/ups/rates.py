@@ -259,7 +259,7 @@ def CreateServiceRequest(settings,
     #Package Information
     total_weight = 0
     for item in items:
-        total_weight += float(item.weight)
+        total_weight +=  float(item.weight) * int( item.quantity )
     
     package = etree.SubElement(shipment, "Package")
     package_type = etree.SubElement(package, "PackagingType")
