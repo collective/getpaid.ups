@@ -63,6 +63,18 @@ UPS_STATUS_CODES = SimpleVocabulary([
     SimpleTerm( '0', 'failture', _(u'Failure') )
     ])
 
+class IUPSRateService( IShippingRateService ):
+    """
+    UPS Rates Service
+    """
+
+    def getRates( order ):
+        """
+        given an order object, return a set of shipping method rate objects
+        for available shipping options, on error raises an exception.
+        """
+
+
 class IOriginRouter( interface.Interface ):
     
     def getOrigin( ):
@@ -78,13 +90,8 @@ def check_settings( settings ):
 
     if settings.pickup_type and not settings.customer_classification:
         raise schema.ValidationError("Customer Classification Code is required for Pickup Type")
-
-class IUPSRateService( IShippingRateService ):
-    
-    def getRates(order):
-        """get shipping rates"""
         
-class IUPSSettings( IShippingMethodSettings ):
+class IUPSSettings( interface.Interface ):
     """
     UPS Rates Service Options
     """
@@ -93,7 +100,7 @@ class IUPSSettings( IShippingMethodSettings ):
     
     enable_ups = schema.Bool( title=_(u"Enable UPS Shipping Rate Calculator"), 
         description = _(u"Enable dynamic shipping rate calculation from UPS for orders in your store."),
-        default=False)
+        default=True)
     
     server_url = schema.Choice(
         title = _(u"UPS Shipment Processor URL"),
@@ -108,7 +115,7 @@ class IUPSSettings( IShippingMethodSettings ):
                             default = [],
                             description = _(u"The services to offer in your store."),
                             value_type = schema.Choice( title=u"ups_services_choice",
-                                                        vocabulary=UPS_SERVICES,
+                                                        vocabulary=UPS_SERVICES
                                                         )
                             )
     

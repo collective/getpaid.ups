@@ -3,21 +3,14 @@ $Id:
 """
 
 from urllib2 import Request, urlopen, URLError
-
 import elementtree.ElementTree as etree
-
 from zope import interface, schema, component
+from zope.app.container.contained import Contained
+from persistent import Persistent
+from getpaid.core import interfaces as igetpaid
 from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder, IShippingRateService, IShippingMethodRate
 from getpaid.core.payment import ShippingAddress, ContactInformation
 import interfaces
-from interfaces import IUPSSettings
-from getpaid.core import options
-
-UPSSettings = options.PersistentOptions.wire(
-    "UPSSettings",
-    "getpaid.ups",
-    IUPSSettings
-    )
 
 class OriginRouter( object ):
     # TODO : move this to getpaid.core
@@ -46,16 +39,21 @@ class OriginRouter( object ):
         
         return contact, address
 
-class UPSRateService( object ):
+class UPSRateService( Persistent, Contained ):
 
-    interface.implements(IShippingRateService)
-    options_interface = IUPSSettings
+    interface.implements(interfaces.IUPSRateService, interfaces.IUPSSettings)
     
-    def __init__(self, context):
-        self.context = context
+    def __init__( self ):
+        # initialize defaults from schema
+        for name, field in schema.getFields( interfaces.IUPSSettings ).items():
+            field.set( self, field.query( self, field.default ) )
+        super( UPSRateService, self).__init__()
+    
+    def getSettingsInterface( self ):
+        return interfaces.IUPSSettings
         
     def getRates( self, order ):
-        settings = IUPSSettings( self.context )
+        settings = interfaces.IUPSSettings( self )
         if( settings.enable_ups == False ):
             return []
         store_contact = component.getUtility( IStoreSettings )
@@ -68,6 +66,7 @@ class UPSRateService( object ):
                                  origin_address, # origin location
                                  order,          # destination contact and location
                                  pretty=True)
+        
         #Returns always a UPS response with two shipment rates (It takes too long to 
         #register a UPS account
         #return FakeResponse(request).shipments
@@ -156,7 +155,7 @@ def CreateServiceRequest(settings,
     customercontext = etree.SubElement(trans_reference, "CustomerContext").text = 'Rating and Service'
     xpciversion = etree.SubElement(trans_reference, "XpciVersion").text = "1.0"
     
-    etree.SubElement(request, "RequestAction").text = "Rate"
+    etree.SubElement(request, "RequestAction").text = "rate"
     etree.SubElement(request, "RequestOption").text = "Shop"
     
     #pickup type
@@ -210,11 +209,10 @@ def CreateServiceRequest(settings,
     
     # shipment - shipto    
     shipment_shipto = etree.SubElement(shipment, "ShipTo")
-
     addr = order.shipping_address
     if addr.ship_same_billing:
         addr = order.billing_address
-        
+    
     contact = order.contact_information
     
     etree.SubElement(shipment_shipto, "CompanyName").text = contact.name
@@ -263,15 +261,18 @@ def CreateServiceRequest(settings,
     prepaid = etree.SubElement(shipment, "Prepaid")
     
     #Package Information
+    total_weight = 0
     for item in items:
-        package = etree.SubElement(shipment, "Package")
-        package_type = etree.SubElement(package, "PackagingType")
-        etree.SubElement(package_type, "Code").text = '04' # Generic 'PAK' description
-        etree.SubElement( package, "Description").text = "Rate"
-        package_weight = etree.SubElement(package, "PackageWeight")
-        package_weight_unit = etree.SubElement(package_weight, "UnitOfMeasurement")
-        etree.SubElement(package_weight_unit, "Code").text = "LBS"
-        etree.SubElement(package_weight, "Weight").text = str( item.weight )
+        total_weight += item.weight
+    
+    package = etree.SubElement(shipment, "Package")
+    package_type = etree.SubElement(package, "PackagingType")
+    etree.SubElement(package_type, "Code").text = '04' # Generic 'PAK' description
+    etree.SubElement( package, "Description").text = "Rate"
+    package_weight = etree.SubElement(package, "PackageWeight")
+    package_weight_unit = etree.SubElement(package_weight, "UnitOfMeasurement")
+    etree.SubElement(package_weight_unit, "Code").text = "LBS"
+    etree.SubElement(package_weight, "Weight").text = str( total_weight )
     
     etree.SubElement(shipment, "ShipmentServiceOptions")
     
