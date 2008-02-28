@@ -8,7 +8,7 @@ from zope import interface, schema, component
 from zope.app.container.contained import Contained
 from persistent import Persistent
 from getpaid.core import interfaces as igetpaid
-from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder, IShippingRateService, IShippingMethodRate
+from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder, IShippingMethodRate
 from getpaid.core.payment import ShippingAddress, ContactInformation
 import interfaces
 
@@ -259,7 +259,7 @@ def CreateServiceRequest(settings,
     #Package Information
     total_weight = 0
     for item in items:
-        total_weight += item.weight
+        total_weight += float(item.weight)
     
     package = etree.SubElement(shipment, "Package")
     package_type = etree.SubElement(package, "PackagingType")
