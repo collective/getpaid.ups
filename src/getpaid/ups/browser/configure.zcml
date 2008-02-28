@@ -1,0 +1,12 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+           xmlns:browser="http://namespaces.zope.org/browser">
+
+  <browser:viewlet
+     name="ups"
+     manager="Products.PloneGetPaid.interfaces.ISettingsShipmentManager"
+     class=".admin.UPSSettings"
+     permission="cmf.ManagePortal"
+     weight="20"
+     />       
+       
+</configure>

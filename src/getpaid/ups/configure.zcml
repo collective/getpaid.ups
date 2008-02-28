@@ -5,6 +5,7 @@
   <i18n:registerTranslations directory="locales" />
 
   <adapter factory=".rates.OriginRouter" />
+  <include package=".browser"/>
     
   <!-- Plugin Manager -->
   <adapter
@@ -19,5 +20,7 @@
           getpaid.core.interfaces.IStoreInstalledEvent"
      handler=".plugin.storeInstalled"
      />
+
+
 
 </configure>
