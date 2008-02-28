@@ -19,23 +19,24 @@ class UPSPlugin( object ):
         
     def install( self ):
         sm = self.context.getSiteManager()
-        registered_p = bool( len( [u for u in sm.getUtilitiesFor( interfaces.IUPSRateService)] ) )
-        if registered_p:
+        utility = sm.queryUtility( interfaces.IShippingRateService, name="ups")
+        if utility is not None:
+            print "utiliy", utility
             return
-        
-        shipping_method = rates.UPSRateService()
+
+        shipping_service = rates.UPSRateService()
          
         try:
-            sm.registerUtility(component=shipping_method, provided=interfaces.IUPSRateService )
+            sm.registerUtility(component=shipping_service, provided=interfaces.IShippingRateService, name="ups" )
         except TypeError:
             # BBB for Zope 2.9
-            sm.registerUtility(interface=interfaces.IUPSRateService, utility=shipping_method)
+            sm.registerUtility(interface=interfaces.IUPSRateService, utility=shipping_service)
         
     def uninstall( self ):
         pass
         
     def status( self ):
-        return component.queryUtility( interfaces.IUPSRateService ) is not None
+        return component.queryUtility( interfaces.IShippingRateService, name="ups" ) is not None
         
 def storeInstalled( object, event ):
     return UPSPlugin( object ).install()
