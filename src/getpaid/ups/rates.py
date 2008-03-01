@@ -429,10 +429,12 @@ def PrintResponse( response ):
             print ' Service Description %s' % shipment.service_desc
         print ' Shipment unit of measurement: %s' % shipment.unit
         print ' Shipment weight: %s' % shipment.weight
-        print ' Currency Code: %s' % shipment.total_charge_currency
-        print ' Total Charge: %s' % shipment.total_charge_value
+        print ' Currency Code: %s' % shipment.currency
+        print ' Total Charge: %s' % shipment.cost
         print ' Days to Delivery: %s' % shipment.days_to_delivery
         print ' Delivery Time: %s' % shipment.delivery_time
+        print ' Unit : %s '% shipment.unit
+        print ' Weight : %s '% shipment.unit        
         print
 
 
