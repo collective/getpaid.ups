@@ -98,10 +98,6 @@ class IUPSSettings( interface.Interface ):
 
     interface.invariant( check_settings )
     
-    enable_ups = schema.Bool( title=_(u"Enable UPS Shipping Rate Calculator"), 
-        description = _(u"Enable dynamic shipping rate calculation from UPS for orders in your store."),
-        default=True)
-    
     server_url = schema.Choice(
         title = _(u"UPS Shipment Processor URL"),
         vocabulary = UPS_URLS,

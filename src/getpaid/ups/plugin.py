@@ -21,7 +21,6 @@ class UPSPlugin( object ):
         sm = self.context.getSiteManager()
         utility = sm.queryUtility( interfaces.IShippingRateService, name="ups")
         if utility is not None:
-            print "utiliy", utility
             return
 
         shipping_service = rates.UPSRateService()

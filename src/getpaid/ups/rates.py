@@ -54,8 +54,6 @@ class UPSRateService( Persistent, Contained ):
         
     def getRates( self, order ):
         settings = interfaces.IUPSSettings( self )
-        if( settings.enable_ups == False ):
-            return []
         store_contact = component.getUtility( IStoreSettings )
         origin_contact, origin_address = interfaces.IOriginRouter( order ).getOrigin()
 
@@ -259,7 +257,11 @@ def CreateServiceRequest(settings,
     #Package Information
     total_weight = 0
     for item in items:
-        total_weight +=  float(item.weight) * int( item.quantity )
+        weight = float(item.weight)
+        # UPS only respects one decimal place for weights
+        if weight > 0 and weight < 0.1:
+            weight = 0.1
+        total_weight +=  weight * int( item.quantity )
     
     package = etree.SubElement(shipment, "Package")
     package_type = etree.SubElement(package, "PackagingType")
