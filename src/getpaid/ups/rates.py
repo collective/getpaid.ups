@@ -71,7 +71,8 @@ class UPSRateService( Persistent, Contained ):
             return []
         response = ParseResponse( etree.fromstring( response_text ) )
         # make sure to filter out options that we aren't offering in our store
-        return [service for service in response.shipments if service.service_code in settings.services]
+        response.shipments = [service for service in response.shipments if service.service_code in settings.services]
+        return response
 
 class ShippingMethodRate( object ):
     """A Shipment Option and Price"""
@@ -89,7 +90,8 @@ class ShippingMethodRate( object ):
     
 class UPSResponse:
     """An object representing a response from UPS...will contain status/error info and possibly a list of shipments"""
-    shipments = ()
+    shipments = []
+    error = None
     
 def SendRequest(url, request):
     
@@ -337,7 +339,7 @@ def ParseResponse( root ):
                         elif child2.tag == "ErrorCode":
                             ups_response.error_code = child2.text
                         elif child2.tag == "ErrorDescription":
-                            ups_response.error_desc = child2.text
+                            ups_response.error = child2.text
                         elif child2.tag == "MinimumRetrySeconds":
                             ups_response.minimum_retry_seconds = child2.text
                         elif child2.tag == "ErrorLocation":
@@ -353,16 +355,7 @@ def ParseResponse( root ):
         elif elem.tag == "RatedShipment":
             shipment = ParseShipment( elem )
             ups_response.shipments.append( shipment )
-            
-    if getattr( ups_response, 'error_code', None):
-        if 'AccessRequest' in getattr( ups_response, 'error_location_elem_name', ''):
-            raise interfaces.UPSInvalidCredentials( **ups_response.__dict__ )
-        if ups_response.error_code == '250003':
-            raise interfaces.UPSInvalidCredentials( **ups_response.__dict__ )
-
-        raise str( ups_response.__dict__.items() )
-        
-        raise interfaces.UPSError( **ups_response.__dict__ )
+    
     return ups_response
 
 def ParseShipment( elem ):
@@ -420,7 +413,7 @@ def PrintResponse( response ):
     print 'Response Status Description: %s' % response.status_desc
     if hasattr( response, 'error_code' ):
         print 'Error...severity: %(severity)s, code: %(code)s, description: %(desc)s' % \
-        {'severity' : response.error_severity, 'code' : response.error_code, 'desc' : response.error_desc }
+        {'severity' : response.error_severity, 'code' : response.error_code, 'desc' : response.error }
     print
     
     #l_services = dict( [ (v,k) for k,v in interfaces.UPS_SERVICES.items() ])
