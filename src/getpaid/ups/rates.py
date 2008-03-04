@@ -257,11 +257,11 @@ def CreateServiceRequest(settings,
     #Package Information
     total_weight = 0
     for item in items:
-        weight = float(item.weight)
-        # UPS only respects one decimal place for weights
-        if weight > 0 and weight < 0.1:
-            weight = 0.1
-        total_weight +=  weight * int( item.quantity )
+        total_weight += float(item.weight) * int(item.quantity)
+    
+    # UPS only respects one decimal place for weights
+    if total_weight > 0 and total_weight < 0.1:
+        total_weight = 0.1
     
     package = etree.SubElement(shipment, "Package")
     package_type = etree.SubElement(package, "PackagingType")
