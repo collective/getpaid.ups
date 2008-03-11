@@ -12,6 +12,7 @@
      for="getpaid.core.interfaces.IStore"
      provides="getpaid.core.interfaces.IPluginManager"
      factory=".plugin.UPSPlugin"
+     name="ups"
      />
 
   <!-- Install at PloneGetPaid Installation (till we have a plugin mannage ui)-->
