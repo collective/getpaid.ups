@@ -4,40 +4,14 @@ $Id:
 
 from urllib2 import Request, urlopen, URLError
 import elementtree.ElementTree as etree
+
 from zope import interface, schema, component
 from zope.app.container.contained import Contained
 from persistent import Persistent
-from getpaid.core import interfaces as igetpaid
-from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IOrder, IShippingMethodRate
-from getpaid.core.payment import ShippingAddress, ContactInformation
-import interfaces
 
-class OriginRouter( object ):
-    # TODO : move this to getpaid.core
-    # 
-    component.adapts( IOrder )
-    
-    interface.implements( interfaces.IOriginRouter )
-    
-    def __init__( self, context ):
-        self.context = context
-        
-    def getOrigin( self ):
-        store_settings = component.getUtility( IStoreSettings )
-        
-        contact = ContactInformation( name = ( store_settings.contact_company or store_settings.store_name ),
-                                      phone_number = store_settings.contact_phone,
-                                      email = store_settings.contact_email )
-                                         
-        address = ShippingAddress( ship_first_line = store_settings.contact_address,
-                                   ship_second_line = store_settings.contact_address2,
-                                   ship_city = store_settings.contact_city,
-                                   ship_state = store_settings.contact_state,
-                                   ship_postal_code = store_settings.contact_postalcode,
-                                   ship_country = store_settings.contact_country,
-                                   )
-        
-        return contact, address
+from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IShippingMethodRate, IOriginRouter
+
+import interfaces
 
 class UPSRateService( Persistent, Contained ):
 
@@ -55,8 +29,11 @@ class UPSRateService( Persistent, Contained ):
     def getRates( self, order ):
         settings = interfaces.IUPSSettings( self )
         store_contact = component.getUtility( IStoreSettings )
-        origin_contact, origin_address = interfaces.IOriginRouter( order ).getOrigin()
-
+        router = component.queryAdapter( order, IOriginRouter  )
+        if not router:
+            router = component.getAdapter( order, IOriginRouter, name="default")
+            
+        origin_contact, origin_address = router.getOrigin()
 
         request = CreateRequest( settings,       # ups settings
                                  store_contact,  # store contact information 
@@ -239,13 +216,13 @@ def CreateServiceRequest(settings,
     
     if origin_address:
         shipfrom_address = etree.SubElement(shipment_shipfrom, "Address")
-        etree.SubElement(shipfrom_address, "AddressLine1").text = origin_address.ship_first_line
-        etree.SubElement(shipfrom_address, "AddressLine2").text = origin_address.ship_second_line
+        etree.SubElement(shipfrom_address, "AddressLine1").text = origin_address.first_line
+        etree.SubElement(shipfrom_address, "AddressLine2").text = origin_address.second_line
         etree.SubElement(shipfrom_address, "AddressLine3")
-        etree.SubElement(shipfrom_address, "City").text = origin_address.ship_city
-        etree.SubElement(shipfrom_address, "StateProvinceCode").text = sanitize_state( origin_address.ship_state )
-        etree.SubElement(shipfrom_address, "PostalCode").text = origin_address.ship_postal_code
-        etree.SubElement(shipfrom_address, "CountryCode").text = origin_address.ship_country
+        etree.SubElement(shipfrom_address, "City").text = origin_address.city
+        etree.SubElement(shipfrom_address, "StateProvinceCode").text = sanitize_state( origin_address.state )
+        etree.SubElement(shipfrom_address, "PostalCode").text = origin_address.postal_code
+        etree.SubElement(shipfrom_address, "CountryCode").text = origin_address.country
     
     #Service Code
     if method == "Rate":

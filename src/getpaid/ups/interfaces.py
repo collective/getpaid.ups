@@ -75,17 +75,6 @@ class IUPSRateService( IShippingRateService ):
         """
 
 
-class IOriginRouter( interface.Interface ):
-    
-    def getOrigin( ):
-        """
-        determine the origin shipping point for an order..
-        
-        return the contact and address info for origin
-        
-        TODO: support multiple origins for an order if someone can justify ;-)
-        """
-
 def check_settings( settings ):
 
     if settings.pickup_type and not settings.customer_classification:
