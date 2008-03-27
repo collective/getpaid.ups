@@ -3,6 +3,7 @@ $Id:
 """
 
 from urllib2 import Request, urlopen, URLError
+import logging
 import elementtree.ElementTree as etree
 
 from zope import interface, schema, component
@@ -12,6 +13,8 @@ from persistent import Persistent
 from getpaid.core.interfaces import IShippableLineItem, IStoreSettings, IShippingMethodRate, IOriginRouter
 
 import interfaces
+
+log = logging.getLogger("getpaid.ups")
 
 class UPSRateService( Persistent, Contained ):
 
@@ -41,16 +44,18 @@ class UPSRateService( Persistent, Contained ):
                                  origin_address, # origin location
                                  order,          # destination contact and location
                                  pretty=True)
-        
+                                 
+
         try:
             response_text = SendRequest( settings.server_url, request ).read()
         except URLError:
             return []
         response = ParseResponse( etree.fromstring( response_text ) )
+        #PrintResponse( response )        
         # make sure to filter out options that we aren't offering in our store
         response.shipments = [service for service in response.shipments if service.service_code in settings.services]
         return response
-
+                
 class ShippingMethodRate( object ):
     """A Shipment Option and Price"""
     interface.implements( IShippingMethodRate )
@@ -71,7 +76,6 @@ class UPSResponse:
     error = None
     
 def SendRequest(url, request):
-    
     req = Request(url, request)
     response = ''
     try:
@@ -112,7 +116,8 @@ def CreateServiceRequest(settings,
                          origin_contact,
                          origin_address,
                          order, 
-                         method = "Rate",
+                         method = "Shop",
+                         shipment_service = None,
                          description = "Rate Shopping"):
                          
     """Generates and returns the etree version of the service request"""
@@ -122,14 +127,15 @@ def CreateServiceRequest(settings,
     servicerequest = etree.Element("RatingServiceSelectionRequest")
     request = etree.SubElement(servicerequest, "Request")
     
-
     #transaction reference
     trans_reference = etree.SubElement(request, "TransactionReference")
     customercontext = etree.SubElement(trans_reference, "CustomerContext").text = 'Rating and Service'
     xpciversion = etree.SubElement(trans_reference, "XpciVersion").text = "1.0"
     
     etree.SubElement(request, "RequestAction").text = "rate"
-    etree.SubElement(request, "RequestOption").text = "Shop"
+    assert method in ("Rate", "Shop"), "Invalid UPS Rate Method"
+
+    etree.SubElement(request, "RequestOption").text = method
     
     #pickup type
     if getattr( settings, 'pickup_type', None):
@@ -226,12 +232,16 @@ def CreateServiceRequest(settings,
     
     #Service Code
     if method == "Rate":
-        shipment_service = etree.SubElement(shipment, "Service")
-        etree.SubElement(shipment_service, "Code").text = str(65)
+        xshipment_service = etree.SubElement(shipment, "Service")
+        etree.SubElement(xshipment_service, "Code").text = shipment_service
         
     #payment information
     payment = etree.SubElement(shipment, "PaymentInformation")
-    prepaid = etree.SubElement(shipment, "Prepaid")
+    etree.SubElement( etree.SubElement( 
+                            etree.SubElement(payment, "Prepaid"), 
+                            "BillShipper" 
+                            ),
+                      "AccountNumber" ).text = settings.username
     
     #Package Information
     total_weight = 0
@@ -244,15 +254,13 @@ def CreateServiceRequest(settings,
     
     package = etree.SubElement(shipment, "Package")
     package_type = etree.SubElement(package, "PackagingType")
-    etree.SubElement(package_type, "Code").text = '04' # Generic 'PAK' description
+    etree.SubElement(package_type, "Code").text = '02' # Customer Supplied Description
     etree.SubElement( package, "Description").text = "Rate"
     package_weight = etree.SubElement(package, "PackageWeight")
     package_weight_unit = etree.SubElement(package_weight, "UnitOfMeasurement")
     etree.SubElement(package_weight_unit, "Code").text = "LBS"
     etree.SubElement(package_weight, "Weight").text = str( total_weight )
-    
-    etree.SubElement(shipment, "ShipmentServiceOptions")
-    
+        
     return servicerequest
 
 
@@ -261,11 +269,14 @@ def CreateRequest( settings,
                    origin_contact,
                    origin_address,
                    order,
-                   pretty=False ):
+                   pretty=False,
+                   method="Shop",
+                   shipment_service=None ):
 
     """Returns the text version of the xml request"""
     accessreq = CreateAccessRequest( settings.access_key, settings.username, settings.password)
-    servicereq = CreateServiceRequest( settings, store_contact, origin_contact, origin_address, order )
+    servicereq = CreateServiceRequest( settings, store_contact, origin_contact, origin_address, order, 
+                                       method=method, shipment_service=shipment_service )
     
     xml_text = '<?xml version="1.0"?>' + etree.tostring(accessreq) + '<?xml version="1.0"?>' + etree.tostring(servicereq)
     return xml_text

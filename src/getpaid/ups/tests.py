@@ -7,7 +7,8 @@ from zope import interface
 from zope.testing.doctestunit import DocFileSuite
 from zope.app.testing import placelesssetup, ztapi
 from getpaid.ups import rates, interfaces
-from getpaid.core.interfaces import IStoreSettings, IOrder
+from getpaid.core.interfaces import IStoreSettings, IOrder, IOriginRouter
+from getpaid.core import router
 
 
 
@@ -29,7 +30,7 @@ class MockStoreSettings( object ):
 def setUp( test ):
     placelesssetup.setUp()
 
-    ztapi.provideAdapter( IOrder, interfaces.IOriginRouter, rates.OriginRouter )
+    ztapi.provideAdapter( IOrder, IOriginRouter, router.OriginRouter )
     ztapi.provideUtility( IStoreSettings, MockStoreSettings() )
 
 def test_suite():

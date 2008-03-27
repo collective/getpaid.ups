@@ -21,6 +21,11 @@ To get a real response from the server, simply comment that line (#66) out.
    >>> ups.username = UPS_USERNAME
    >>> ups.password = UPS_PASSWORD
    >>> ups.access_key = UPS_ACCESS_KEY
+   >>> ups.pickup_type = '01'
+   
+We need to explicitly specify which ups services we're allowing for a store.
+
+   >>> ups.services = interfaces.UPS_SERVICES.by_value.keys()
 
 Origin Information
 ==================
@@ -75,25 +80,31 @@ Getting Shipping Options
 
 Now we can query UPS to find out the various services, delivery windows, and
  prices that UPS can offer for transit.
-
-  >>> methods = ups.getRates( myorder )
+ 
+  >>> results = ups.getRates( myorder )
+  >>> results.shipments.sort( lambda x,y:cmp(x.cost,y.cost) )
+  >>> methods = results.shipments  
   >>> len(methods)
-  4
+  6
 
 Prices will vary over time, for testing purposes, we sort and compare
 the expected serices types by cost (low to high)
 
-  >>> methods.sort( lambda x,y:cmp(x.cost,y.cost) )
   >>> methods[0].service
-  u'UPS 2nd Day Air'
+  u'UPS Ground'
   >>> methods[1].service
-  u'UPS Next Day Air Saver'
+  u'UPS Three Day Select'
   >>> methods[2].service
-  u'UPS Next Day Air'
+  u'UPS 2nd Day Air'
   >>> methods[3].service
-  u'UPS Next Day Air Early AM'
- 
+  u'UPS Next Day Air Saver'
 
+Failure Modes
+=============
+
+TODO: Test
+
+status available on results objects
 
   
 
