@@ -55,7 +55,16 @@ class UPSRateService( Persistent, Contained ):
         # make sure to filter out options that we aren't offering in our store
         response.shipments = [service for service in response.shipments if service.service_code in settings.services]
         return response
-                
+
+
+    #################################
+    # junk for z2.9 / f 1.4
+    def manage_fixupOwnershipAfterAdd(self, *args):
+        return
+
+    def manage_setLocalRoles( self, *args ):
+        return
+    
 class ShippingMethodRate( object ):
     """A Shipment Option and Price"""
     interface.implements( IShippingMethodRate )
