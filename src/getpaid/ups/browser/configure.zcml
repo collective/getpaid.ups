@@ -8,5 +8,14 @@
      permission="cmf.ManagePortal"
      weight="20"
      />       
+
+  <browser:viewlet
+     name="orders-export-worldship-csv"
+     manager="Products.PloneGetPaid.interfaces.IOrdersAdminManager"
+     template="templates/orders-export-worldship-csv.pt"
+     class=".admin.OrderCSVWorldShipComponent"
+     permission="zope2.View"
+     />
        
 </configure>
+
