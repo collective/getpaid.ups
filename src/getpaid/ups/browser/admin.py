@@ -46,7 +46,7 @@ def getAddressInfo(order,field):
                 'address': "%s %s" % (infos.bill_first_line or "" , infos.bill_second_line or ""),
                 'city': infos.bill_city,
                 'country': vocab_countries.getTerm(infos.bill_country).title,
-                'state': vocab_states.getTerm(infos.bill_state).title,
+                'state': infos.bill_state.split("-").pop(),
                 'postal_code': infos.bill_postal_code}
 
     else:
@@ -54,14 +54,14 @@ def getAddressInfo(order,field):
                 'address': "%s %s" % (infos.ship_first_line or "", infos.ship_second_line or ""),
                 'city': infos.ship_city,
                 'country': vocab_countries.getTerm(infos.ship_country).title,
-                'state': vocab_states.getTerm(infos.ship_state).title,
+                'state': infos.ship_state.split("-").pop(),
                 'postal_code': infos.ship_postal_code}
     contact = order.contact_information
     order_info['contact_name'] =  contact.name
     order_info['email'] = contact.email
     order_info['phone'] = contact.phone_number
 
-    return '"%s"' % order_info[field]
+    return '%s' % order_info[field]
 
 class OrderCSVWorldShipComponent( core.ComponentViewlet ):
 
