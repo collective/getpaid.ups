@@ -1,5 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope"
-           xmlns:browser="http://namespaces.zope.org/browser">
+           xmlns:browser="http://namespaces.zope.org/browser"
+           xmlns:zcml="http://namespaces.zope.org/zcml">
 
   <browser:viewlet
      name="ups"
@@ -9,13 +10,14 @@
      weight="20"
      />       
 
-  <browser:viewlet
+<browser:viewlet
+     zcml:condition="installed getpaid.warehouse"
      name="orders-export-worldship-csv"
-     manager="Products.PloneGetPaid.interfaces.IOrdersAdminManager"
+     manager="getpaid.warehouse.interfaces.IWarehouseFulfillmentVM"
      template="templates/orders-export-worldship-csv.pt"
      class=".admin.OrderCSVWorldShipComponent"
-     permission="zope2.View"
+     permission="cmf.ManagePortal"
      />
-       
+
 </configure>
 
