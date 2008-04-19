@@ -28,6 +28,10 @@ class UPSRateService( Persistent, Contained ):
     
     def getSettingsInterface( self ):
         return interfaces.IUPSSettings
+
+    def getMethodName( self, method_id ):
+        term = interfaces.UPS_SERVICES.getTerm( method_id )
+        return term.title
         
     def getRates( self, order ):
         settings = interfaces.IUPSSettings( self )

@@ -74,6 +74,10 @@ class IUPSRateService( IShippingRateService ):
         for available shipping options, on error raises an exception.
         """
 
+    def getMethodName( method_id ):
+        """
+        given a shipping method id, return the name of the method name
+        """
 
 def check_settings( settings ):
 
