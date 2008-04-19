@@ -1,7 +1,7 @@
 """
 $Id: $
 """
-import StringIO, csv
+import StringIO, csv, time
 
 from zope import component
 from zope.app import zapi
@@ -76,12 +76,10 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
     def export_search( self, action, data ):
 
         search = self.manager.get('orders-search')
-        listing = self.manager.get('order-listing')
-
+        
         io = StringIO.StringIO()
         writer = csv.writer( io )
         
-        #writer.writerow( [c.name for c in listing.columns ] )
         writer.writerow( ["OrderNumber", 
                         "CompanyorName",
                         "Attention", 
@@ -137,5 +135,10 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
 
         # um.. send to user, we need to inform our view, to do the appropriate thing
         # since we can't directly control the response rendering from the viewlet
-        self._parent._download_content = ('text/csv',  io.getvalue(), 'OrderSearchExport')
+        download_content = ('text/csv',  io.getvalue(), 'OrderSearchExport')
+        if download_content is not None:
+            self._parent.request.response.setHeader('Content-Type', download_content[0] )
+            self._parent.request.RESPONSE.setHeader('Content-Disposition','inline;filename=%s-%s.csv' % (download_content[2], time.strftime("%Y%m%d",time.localtime())))
+            return download_content[1]
+ 
 
