@@ -38,7 +38,7 @@ class UPSSettings( EditFormViewlet ):
 
 
 def getAddressInfo(order,field):
-    if not interfaces.IShippableOrder.providedBy( order ):
+    if not coreInterfaces.IShippableOrder.providedBy( order ):
         return "N/A"
     utility = zapi.getUtility(ICountriesStates)
     vocab_countries = TitledVocabulary.fromTitles(utility.countries)
@@ -69,14 +69,15 @@ def getAddressInfo(order,field):
     #Finally the shipment info
     #Total Weight
     totalShipmentWeight = 0
-    for eachProduct in self.order.shopping_cart.values():
-        weightValue = eachProduct.weight * eachProduct.quantity
-        totalShipmentWeight += weightValue
+    for eachProduct in order.shopping_cart.values():
+        if coreInterfaces.IShippableLineItem.providedBy( eachProduct ):
+            weightValue = eachProduct.weight * eachProduct.quantity
+            totalShipmentWeight += weightValue
     order_info['weight'] = totalShipmentWeight
     #Service type
     service = component.queryUtility( coreInterfaces.IShippingRateService,
                                           order.shipping_service )
-    order_info['service'] = service.getMethodName( self.order.shipping_method )
+    order_info['service'] = service.getMethodName( order.shipping_method )
 
 
 
@@ -154,16 +155,11 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
         #Service Type
         field_getters.append(lambda x,y: getAddressInfo(x,'service'))
 
-
         for order in search.results:
             writer.writerow( [getter( order, None ) for getter in field_getters ] )
 
         # um.. send to user, we need to inform our view, to do the appropriate thing
         # since we can't directly control the response rendering from the viewlet
-        download_content = ('text/csv',  io.getvalue(), 'WorldShipOrderExport')
-        if download_content is not None:
-            self._parent.request.response.setHeader('Content-Type', download_content[0] )
-            self._parent.request.RESPONSE.setHeader('Content-Disposition','inline;filename=%s-%s.csv' % (download_content[2], time.strftime("%Y%m%d",time.localtime())))
-            return download_content[1]
+        self._parent._download_content = ('text/csv',  io.getvalue(), 'WorldShipOrderExport')
  
 
