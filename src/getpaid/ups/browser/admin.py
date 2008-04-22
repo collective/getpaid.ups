@@ -10,6 +10,8 @@ from zope.formlib import form
 from getpaid.ups import interfaces
 from getpaid.ups.interfaces import _
 
+from getpaid.core import interfaces as coreInterfaces
+
 from ore.viewlet import core
 
 from Products.PloneGetPaid.browser.base import EditFormViewlet
@@ -36,10 +38,13 @@ class UPSSettings( EditFormViewlet ):
 
 
 def getAddressInfo(order,field):
+    if not interfaces.IShippableOrder.providedBy( order ):
+        return "N/A"
     utility = zapi.getUtility(ICountriesStates)
     vocab_countries = TitledVocabulary.fromTitles(utility.countries)
     vocab_states = TitledVocabulary.fromTitles(utility.states())
     infos = order.shipping_address
+    #Check if the shipping info is the same that the billing one and add the resulting one
     if infos.ship_same_billing:
         infos = order.billing_address
         order_info= {'name': infos.bill_name,
@@ -56,10 +61,24 @@ def getAddressInfo(order,field):
                 'country': vocab_countries.getTerm(infos.ship_country).title,
                 'state': infos.ship_state.split("-").pop(),
                 'postal_code': infos.ship_postal_code}
+    #Add the contact information
     contact = order.contact_information
     order_info['contact_name'] =  contact.name
     order_info['email'] = contact.email
     order_info['phone'] = contact.phone_number
+    #Finally the shipment info
+    #Total Weight
+    totalShipmentWeight = 0
+    for eachProduct in self.order.shopping_cart.values():
+        weightValue = eachProduct.weight * eachProduct.quantity
+        totalShipmentWeight += weightValue
+    order_info['weight'] = totalShipmentWeight
+    #Service type
+    service = component.queryUtility( coreInterfaces.IShippingRateService,
+                                          order.shipping_service )
+    order_info['service'] = service.getMethodName( self.order.shipping_method )
+
+
 
     return '%s' % order_info[field]
 
@@ -94,7 +113,9 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
                         "FaxNumber",  
                         "ResidentialIndicator",
                         "ShipNotifyByEmail",
-                        "EMailAddress"])
+                        "EMailAddress",
+                        "Weight",
+                        "ServiceType"])
 
 
         field_getters = []
@@ -128,6 +149,10 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
         field_getters.append(lambda x,y: "Y")
         #EMailAddress
         field_getters.append(lambda x,y: getAddressInfo(x,'email'))
+        #Weight
+        field_getters.append(lambda x,y: getAddressInfo(x,'weight'))
+        #Service Type
+        field_getters.append(lambda x,y: getAddressInfo(x,'service'))
 
 
         for order in search.results:
@@ -135,7 +160,7 @@ class OrderCSVWorldShipComponent( core.ComponentViewlet ):
 
         # um.. send to user, we need to inform our view, to do the appropriate thing
         # since we can't directly control the response rendering from the viewlet
-        download_content = ('text/csv',  io.getvalue(), 'OrderSearchExport')
+        download_content = ('text/csv',  io.getvalue(), 'WorldShipOrderExport')
         if download_content is not None:
             self._parent.request.response.setHeader('Content-Type', download_content[0] )
             self._parent.request.RESPONSE.setHeader('Content-Disposition','inline;filename=%s-%s.csv' % (download_content[2], time.strftime("%Y%m%d",time.localtime())))
