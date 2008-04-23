@@ -79,6 +79,13 @@ class IUPSRateService( IShippingRateService ):
         given a shipping method id, return the name of the method name
         """
 
+    def getTrackingUrl( track_number ):
+        """
+        given a track number this should return, if available for this service
+        a url that can be used to track the shipment
+        """
+
+
 def check_settings( settings ):
 
     if settings.pickup_type and not settings.customer_classification:

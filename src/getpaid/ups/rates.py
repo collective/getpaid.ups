@@ -32,6 +32,17 @@ class UPSRateService( Persistent, Contained ):
     def getMethodName( self, method_id ):
         term = interfaces.UPS_SERVICES.getTerm( method_id )
         return term.title
+
+    def getTrackingUrl( self, track_number ):
+        """
+        We use this template url to return a tracking link, this may not work
+        FIXME: The language is hardcoded
+        http://wwwapps.ups.com/WebTracking/processInputRequest?sort_by=status&tracknums_displayed=1&TypeOfInquiryNumber=T&loc=en_US&InquiryNumber1=YOURTRACKINGNUMBERHERE&track.x=0&track.y=0
+        """
+        tracking_url = """http://wwwapps.ups.com/WebTracking/processInputRequest?sort_by=status&tracknums_displayed=1&TypeOfInquiryNumber=T&loc=en_US&InquiryNumber1=%s&track.x=0&track.y=0""" % track_number
+        return tracking_url
+
+
         
     def getRates( self, order ):
         settings = interfaces.IUPSSettings( self )
