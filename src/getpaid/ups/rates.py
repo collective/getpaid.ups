@@ -133,7 +133,15 @@ def sanitize_state( state ):
 def sanitize_field( address, name):
     value = getattr( address, "ship_%s"%name, None)
     return value or getattr( address, "bill_%s"%name, '')
-    
+
+def verify_address( address, err_msg="Invalid Address" ):
+    for i in ("contact_address",              
+              "contact_city",
+              "contact_state",
+              "contact_country",
+              "contact_postalcode"):
+        if not getattr( address, i):
+            raise TypeError( err_msg )
     
 def CreateServiceRequest(settings,
                          store_contact,
@@ -200,6 +208,7 @@ def CreateServiceRequest(settings,
     #    etree.SubElement(shipment_shipper, "ShipperNumber").text = settings.shipper_number
     
     shipper_address = etree.SubElement(shipment_shipper, "Address")
+    verify_address( store_contact, "Invalid Store Address Settings in Store Admin")
     
     etree.SubElement(shipper_address, "AddressLine1").text = store_contact.contact_address
     etree.SubElement(shipper_address, "AddressLine2").text = store_contact.contact_address2

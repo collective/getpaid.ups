@@ -102,6 +102,19 @@ the expected serices types by cost (low to high)
 Failure Modes
 =============
 
+if the store shipping information isn't setup correctly we get a type
+error asking to look at the store settings.
+
+  >>> from zope.component import getUtility
+  >>> from getpaid.core.interfaces import IStoreSettings
+  >>> settings = getUtility( IStoreSettings )
+  >>> settings.contact_state = ""
+  >>> ups.getRates( myorder )
+  Traceback (most recent call last):
+  ...
+  TypeError: Invalid Store Address Settings in Store Admin
+
+
 TODO: Test
 
 status available on results objects
