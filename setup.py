@@ -9,7 +9,11 @@ setup(
     include_package_data=True,
     install_requires = [ 'setuptools',
                          'getpaid.core',
-                         'elementtree'
+                         'elementtree',
+                         'zope.formlib',
+                         'zope.schema',
+                         'ore.viewlet',
+                         'Products.PloneGetPaid',
                          ],
     zip_safe = False,
     )
