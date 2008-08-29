@@ -1,11 +1,12 @@
+===========
 getpaid ups
------------
+===========
 
 This modules provides an integration package for getpaid and UPS 
 ( www.ups.com ). 
 
 Usage
------
+=====
 
 First we need to create an instance of a UPS rating utility and configure 
 it with our UPS Account Information. In order to run the unit tests in this
