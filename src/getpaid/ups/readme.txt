@@ -6,7 +6,7 @@ This modules provides an integration package for getpaid and UPS
 ( www.ups.com ). 
 
 Usage
-=====
+-----
 
 First we need to create an instance of a UPS rating utility and configure 
 it with our UPS Account Information. In order to run the unit tests in this
@@ -29,14 +29,14 @@ We need to explicitly specify which ups services we're allowing for a store.
    >>> ups.services = interfaces.UPS_SERVICES.by_value.keys()
 
 Origin Information
-==================
+------------------
 
 We also need to configure our store to setup a default origin location for
 packages to originate from. for brevity, we've done configured the store 
 settings in the test setup with a san francisco address.
 
 Creating an Order to Ship
-=========================
+-------------------------
 
 Let's create an order with some items we'd like to have shipped.
 
@@ -53,7 +53,7 @@ Let's create an order with some items we'd like to have shipped.
   >>> mycart[ line_item.item_id ] = line_item
 
 Destination Information
-=======================
+-----------------------
 
 We need some additional information for an order to successfully
 process it, first some contact information:
@@ -77,7 +77,7 @@ and of course a place to ship to:
   >>> myorder.shipping_address = ship_address
 
 Getting Shipping Options
-========================
+------------------------
 
 Now we can query UPS to find out the various services, delivery windows, and
  prices that UPS can offer for transit.
@@ -101,7 +101,7 @@ the expected serices types by cost (low to high)
   u'UPS Next Day Air Saver'
 
 Failure Modes
-=============
+-------------
 
 if the store shipping information isn't setup correctly we get a type
 error asking to look at the store settings.
