@@ -16,7 +16,7 @@ def read(*rnames):
 
 setup(
     name="getpaid.ups",
-    version="0.4dev",
+    version="0.3",
     author='getpaid community',
     author_email='getpaid-dev@googlegroups.com',
     description='Get paid UPS functionality',
